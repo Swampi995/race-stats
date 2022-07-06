@@ -1,16 +1,20 @@
 {
   "expo": {
-    "name": "race-stats",
-    "slug": "race-stats",
-    "version": "1.0.0",
+    "name": "Race Stats",
+    "slug": "drag-box",
+    "privacy": "public",
+    "jsEngine": "hermes",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "version": "17.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#212631"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
@@ -18,17 +22,46 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+      "package": "com.swampi.dragbox",
+      "versionCode": 16,
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.swampi.dragbox",
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-5724098793803537~5611686386"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.swampi.dragbox",
+      "buildNumber": "16.0.0",
+      "supportsTablet": true,
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-5724098793803537~4314631177"
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": "NO",
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
+        "NSLocationWhenInUseUsageDescription": "This app uses your GPS to provide you the speed of your vehicle."
       }
     },
-    "web": {
-      "favicon": "./assets/images/favicon.png"
-    }
+    "hooks": {
+      "postPublish": [
+        {
+          "file": "sentry-expo/upload-sourcemaps",
+          "config": {
+            "organization": "swampi-apps",
+            "project": "race-stats",
+            "authToken": "a2bae6bdaaf34a988e7764269b9f41bf2a6e21a93202457eaf00ae1e1a60587a"
+          }
+        }
+      ]
+    },
+    "plugins": [
+      "sentry-expo",
+      "expo-ads-admob"
+    ]
   }
 }

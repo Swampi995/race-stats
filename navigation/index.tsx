@@ -1,45 +1,73 @@
-/**
- * If you are not familiar with React Navigation, refer to the "Fundamentals" guide:
- * https://reactnavigation.org/docs/getting-started
- *
- */
-import { FontAwesome } from '@expo/vector-icons';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs'; import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as React from 'react';
-import { ColorSchemeName, Pressable } from 'react-native';
+import * as Updates from 'expo-updates';
+import IconEntypo from 'react-native-vector-icons/Entypo';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Foundation from 'react-native-vector-icons/Foundation';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-import Colors from '../constants/Colors';
-import useColorScheme from '../hooks/useColorScheme';
 import ModalScreen from '../screens/ModalScreen';
-import NotFoundScreen from '../screens/NotFoundScreen';
-import TabOneScreen from '../screens/TabOneScreen';
-import TabTwoScreen from '../screens/TabTwoScreen';
+import StatsScreen from '../screens/StatsScreen';
+import GForce from '../screens/GForce';
+import PastRuns from '../screens/PastRuns';
+import Settings from '../screens/Settings';
 import { RootStackParamList, RootTabParamList, RootTabScreenProps } from '../types';
-import LinkingConfiguration from './LinkingConfiguration';
+import { carConnect, CarReduxProps } from '../redux/connect/carConnect';
+import { pastRunsConnect, PastRunsReduxProps } from '../redux/connect/pastRunsConnect';
+import * as storage from '../services/storage';
+import * as service from '../services/storage/service';
+import * as Styles from '../constants/Styles';
 
-export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
+const Navigation: React.FC<CarReduxProps & PastRunsReduxProps> = (props) => {
+  React.useEffect(() => {
+    fetchUpdates();
+    loadData();
+  }, []);
+
+  const fetchUpdates = async () => {
+    if (!__DEV__) {
+      const update = await Updates.fetchUpdateAsync();
+      if (update && update.isNew) {
+        await Updates.reloadAsync();
+      }
+    }
+  }
+
+  const loadData = async () => {
+    const cars = await storage.retrieveData<storage.CarsObject>(storage.CARS_IDS);
+    const selectedKey = await storage.retrieveData<string>(storage.SELECTED_KEY);
+    const isMetric = await storage.retrieveData<boolean>(storage.IS_METRIC_KEY);
+
+    if (!cars) {
+      await storage.storeData(storage.CARS_IDS, storage.defaultCar);
+      await storage.storeData(storage.SELECTED_KEY, 'default');
+    }
+
+    props.setCars(cars || storage.defaultCar);
+    props.setSelectedCar(selectedKey || 'default');
+    props.setIsMetric(isMetric === undefined ? true : isMetric);
+
+    const pastRuns = await service.getPastRuns();
+    pastRuns && props.setPastRuns(pastRuns);
+  }
+
   return (
     <NavigationContainer
-      linking={LinkingConfiguration}
-      theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      theme={DefaultTheme}>
       <RootNavigator />
     </NavigationContainer>
   );
 }
 
-/**
- * A root stack navigator is often used for displaying modals on top of all other content.
- * https://reactnavigation.org/docs/modal
- */
+export default pastRunsConnect(carConnect(Navigation))
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function RootNavigator() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Root" component={BottomTabNavigator} options={{ headerShown: false }} />
-      <Stack.Screen name="NotFound" component={NotFoundScreen} options={{ title: 'Oops!' }} />
       <Stack.Group screenOptions={{ presentation: 'modal' }}>
         <Stack.Screen name="Modal" component={ModalScreen} />
       </Stack.Group>
@@ -47,61 +75,49 @@ function RootNavigator() {
   );
 }
 
-/**
- * A bottom tab navigator displays tab buttons on the bottom of the display to switch screens.
- * https://reactnavigation.org/docs/bottom-tab-navigator
- */
-const BottomTab = createBottomTabNavigator<RootTabParamList>();
+const BottomTab = createMaterialBottomTabNavigator<RootTabParamList>();
 
 function BottomTabNavigator() {
-  const colorScheme = useColorScheme();
 
   return (
     <BottomTab.Navigator
-      initialRouteName="TabOne"
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-      }}>
+      initialRouteName="stats"
+      labeled={false}
+      activeColor={Styles.TEXT_LIGHT}
+      inactiveColor={Styles.TEXT_DARK}
+      barStyle={{ backgroundColor: Styles.BACKGROUND_DARK }}>
       <BottomTab.Screen
-        name="TabOne"
-        component={TabOneScreen}
-        options={({ navigation }: RootTabScreenProps<'TabOne'>) => ({
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Pressable
-              onPress={() => navigation.navigate('Modal')}
-              style={({ pressed }) => ({
-                opacity: pressed ? 0.5 : 1,
-              })}>
-              <FontAwesome
-                name="info-circle"
-                size={25}
-                color={Colors[colorScheme].text}
-                style={{ marginRight: 15 }}
-              />
-            </Pressable>
-          ),
+        name="stats"
+        component={StatsScreen}
+        options={({ navigation }: RootTabScreenProps<'stats'>) => ({
+          title: 'Time Stats',
+          tabBarIcon: ({ color }) => <IconEntypo name="stopwatch" size={25} color={color} />,
         })}
       />
       <BottomTab.Screen
-        name="TabTwo"
-        component={TabTwoScreen}
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
+        name="gforce"
+        component={GForce}
+        options={({ navigation }: RootTabScreenProps<'gforce'>) => ({
+          title: 'G Force',
+          tabBarIcon: ({ color }) => <Foundation name="target-two" size={27} color={color} />,
+        })}
+      />
+      <BottomTab.Screen
+        name="pastRuns"
+        component={PastRuns}
+        options={({ navigation }: RootTabScreenProps<'pastRuns'>) => ({
+          title: 'Past Runs',
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="history" size={27} color={color} />,
+        })}
+      />
+      <BottomTab.Screen
+        name="settings"
+        component={Settings}
+        options={({ navigation }: RootTabScreenProps<'settings'>) => ({
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <MaterialIcons name="settings" size={27} color={color} />,
+        })}
       />
     </BottomTab.Navigator>
   );
-}
-
-/**
- * You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
- */
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={30} style={{ marginBottom: -3 }} {...props} />;
 }
